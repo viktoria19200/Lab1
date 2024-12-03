@@ -2,8 +2,7 @@
 #include <iostream>
 #include <vector>
 
-#define MAX_EXECUTION_TIME 10000  // Maximum execution time (10 seconds)
-
+#define MAX_EXECUTION_TIME 10000  
 
 STARTUPINFO si;
 PROCESS_INFORMATION pi;
