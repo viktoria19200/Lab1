@@ -1,0 +1,308 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "#include <windows.h>\n#include <iostream>\n#include <vector>\n#include <string>\n#include <thread>\n#include <mutex>\n\n// Глобальний семафор для синхронізації\nHANDLE semaphore;\n\nvoid ManageProcess(const std::string& appName, DWORD maxExecutionTimeMs) {\n    // Ініціалізація структури STARTUPINFO та PROCESS_INFORMATION\n    STARTUPINFO si = { 0 };\n    PROCESS_INFORMATION pi = { 0 };\n    si.cb = sizeof(si);\n\n    // Створення процесу\n    if (!CreateProcessA(\n            nullptr,                     // Ім'я виконуваного файлу\n            const_cast<char*>(appName.c_str()), // Командний рядок\n            nullptr,                     // Атрибути безпеки процесу\n            nullptr,                     // Атрибути безпеки потоку\n            FALSE,                       // Спадковість дескрипторів\n            0,                           // Прапори створення\n            nullptr,                     // Середовище процесу\n            nullptr,                     // Робоча директорія\n            &si,                         // STARTUPINFO\n            &pi)) {                      // PROCESS_INFORMATION\n        std::cerr << \"Failed to create process: \" << appName << \"\\n\";\n        return;\n    }\n\n    std::cout << \"Process created: \" << appName << \" (PID: \" << pi.dwProcessId << \")\\n\";\n\n    // Таймер для контролю часу виконання\n    auto start = GetTickCount();\n\n    while (true) {\n        // Очікування завершення процесу з тайм-аутом\n        DWORD waitResult = WaitForSingleObject(pi.hProcess, 500); // Чекати 500 мс\n\n        if (waitResult == WAIT_OBJECT_0) {\n            // Процес завершився\n            DWORD exitCode;\n            if (GetExitCodeProcess(pi.hProcess, &exitCode)) {\n                std::cout << \"Process \" << appName << \" completed with exit code: \" << exitCode << \"\\n\";\n            }\n            break;\n        }\n\n        // Перевірка на перевищення часу виконання\n        if (GetTickCount() - start > maxExecutionTimeMs) {\n            std::cerr << \"Process \" << appName << \" timed out. Terminating...\\n\";\n            TerminateProcess(pi.hProcess, 1);\n            break;\n        }\n    }\n\n    // Закриття дескрипторів\n    CloseHandle(pi.hProcess);\n    CloseHandle(pi.hThread);\n\n    // Сигналізувати, що процес завершився (використовується семафор)\n    ReleaseSemaphore(semaphore, 1, nullptr);\n}\n\nint main() {\n    // Ініціалізація семафора (макс. 3 одночасні потоки)\n    semaphore = CreateSemaphore(nullptr, 3, 3, nullptr);\n    if (!semaphore) {\n        std::cerr << \"Failed to create semaphore.\\n\";\n        return 1;\n    }\n\n    // Список програм для запуску\n    std::vector<std::string> programs = {\n        \"notepad.exe\",\n        \"mspaint.exe\",\n        \"calc.exe\"\n    };\n\n    std::vector<std::thread> threads;\n\n    for (const auto& program : programs) {\n        // Очікування доступності семафора\n        WaitForSingleObject(semaphore, INFINITE);\n\n        // Запуск процесу в окремому потоці\n        threads.emplace_back(ManageProcess, program, 10000); // Таймаут 10 секунд\n    }\n\n    // Очікування завершення всіх потоків\n    for (auto& t : threads) {\n        if (t.joinable()) {\n            t.join();\n        }\n    }\n\n    // Закриття семафора\n    CloseHandle(semaphore);\n\n    std::cout << \"All processes managed.\\n\";\n    return 0;\n}\n",
+			"settings":
+			{
+				"buffer_size": 3252,
+				"line_ending": "Windows",
+				"name": "#include <windows.h>"
+			},
+			"undo_stack":
+			[
+				[
+					1,
+					1,
+					"paste",
+					{
+						"event":
+						{
+							"modifier_keys":
+							{
+							},
+							"x": 237.3,
+							"y": 45.3
+						}
+					},
+					"AQAAAAAAAAAAAAAAtAwAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/"
+				]
+			]
+		},
+		{
+			"file": "/C/Users/User/.ssh/id_ed25519",
+			"settings":
+			{
+				"buffer_size": 411,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "lab1.sublime-project",
+			"settings":
+			{
+				"buffer_size": 45,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/Users/User/Documents/GitHub/Lab-1"
+	],
+	"file_history":
+	[
+		"/C/index.html/Dvurechenska"
+	],
+	"find":
+	{
+		"height": 0.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3252,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								400,
+								400
+							]
+						],
+						"settings":
+						{
+							"auto_name": "#include <windows.h>",
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 706.4,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"stack_multiselect": false,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/C/Users/User/.ssh/id_ed25519",
+					"selected": true,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 411,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"stack_multiselect": false,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "lab1.sublime-project",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 45,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JSON/JSON.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"stack_multiselect": false,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 40.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "lab1.sublime-project",
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
