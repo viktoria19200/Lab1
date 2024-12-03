@@ -1,68 +1,66 @@
-﻿#include <windows.h>
-#include <tchar.h>
+#include <windows.h>
 #include <iostream>
 #include <vector>
 
-void CreateAndManageProcess(LPCSTR applicationName, int timeoutMilliseconds) {
-    STARTUPINFOA si = { sizeof(STARTUPINFOA) };
-    PROCESS_INFORMATION pi = {};
-    DWORD exitCode = 0;
+#define MAX_EXECUTION_TIME 10000  // Maximum execution time (10 seconds)
 
-   
-    if (!CreateProcessA(
-        applicationName,         
-        NULL,                    
-        NULL,                    
-        NULL,                   
-        FALSE,                   
-        0,                      
-        NULL,                    
-        NULL,                    
-        &si,                    
-        &pi                     
+
+STARTUPINFO si;
+PROCESS_INFORMATION pi;
+
+void CreateAndManageProcess(const char* programName, const char* arguments) {
+    
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+
+    ZeroMemory(&pi, sizeof(pi));
+
+    
+    if (!CreateProcess(
+        programName,           
+        (LPSTR)arguments,      
+        NULL,                  
+        NULL,                 
+        FALSE,                 
+        0,                    
+        NULL,                  
+        NULL,                 
+        &si,                   
+        &pi                    
     )) {
-        std::cerr << "Failed to create process. Error code: " << GetLastError() << std::endl;
+        std::cerr << "Error creating process. Error code: " << GetLastError() << std::endl;
         return;
     }
 
-    std::cout << "Process started with PID:" << pi.dwProcessId << std::endl;
+    std::cout << "Process created. Process ID: " << pi.dwProcessId << std::endl;
 
-   
-    DWORD waitResult = WaitForSingleObject(pi.hProcess, timeoutMilliseconds);
-
-    if (waitResult == WAIT_TIMEOUT) {
-        std::cout << "The process has timed out. Ending the process..." << std::endl;
-        if (!TerminateProcess(pi.hProcess, 1)) {
-            std::cerr << "The process could not be completed. Error code: " << GetLastError() << std::endl;
-        }
-    }
-    else if (waitResult == WAIT_OBJECT_0) {
+  
+    DWORD dwWaitResult = WaitForSingleObject(pi.hProcess, MAX_EXECUTION_TIME);
+    if (dwWaitResult == WAIT_TIMEOUT) {
+        std::cout << "Process exceeded maximum execution time, it will be terminated." << std::endl;
+        TerminateProcess(pi.hProcess, 0);  
+    } else {
+        
+        DWORD exitCode;
         if (GetExitCodeProcess(pi.hProcess, &exitCode)) {
-            std::cout << "The process has ended. Completion code: " << exitCode << std::endl;
+            std::cout << "Process ended with exit code: " << exitCode << std::endl;
+        } else {
+            std::cerr << "Failed to retrieve the exit code of the process." << std::endl;
         }
-        else {
-            std::cerr << "Could not get process exit code. Error code: " << GetLastError() << std::endl;
-        }
-    }
-    else {
-        std::cerr << "Error waiting for process. Error code: " << GetLastError() << std::endl;
     }
 
-    
+ 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 }
 
 int main() {
-    const int TIMEOUT_MS = 10000; 
-
     
-    CreateAndManageProcess("notepad.exe", TIMEOUT_MS);
+    std::vector<const char*> programs = { "notepad.exe", "calc.exe" };  
+    std::vector<const char*> arguments = { "", "" }; 
 
-    /
-    std::vector<LPCSTR> programs = { "notepad.exe", "calc.exe" };
-    for (const auto& program : programs) {
-        CreateAndManageProcess(program, TIMEOUT_MS);
+    for (size_t i = 0; i < programs.size(); ++i) {
+        CreateAndManageProcess(programs[i], arguments[i]);
     }
 
     return 0;
